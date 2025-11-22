@@ -1,0 +1,16 @@
+# ignore root-level stuff
+node_modules/
+.env
+
+# ignore frontend env
+app/.env
+app/node_modules/
+
+# ignore backend env
+backend/.env
+backend/node_modules/
+
+# misc
+.expo/
+dist/
+build/
