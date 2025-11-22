@@ -1,10 +1,12 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import { API_URL_ENV } from '@env';
 
-// Get API URL from environment config
-// The .env file is loaded through the env.config.js file
-const API_URL = `${API_URL_ENV}/api`;
+// Get API URL from Expo Config (Production) or .env (Development)
+const API_URL = Constants.expoConfig?.extra?.apiUrl 
+  ? `${Constants.expoConfig.extra.apiUrl}/api` 
+  : `${API_URL_ENV}/api`;
 
 // Log for debugging purposes
 console.log('API_URL configured as:', API_URL);

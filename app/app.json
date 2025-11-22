@@ -20,10 +20,17 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.harshit.quizie"
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "apiUrl": "https://quiz-app-89nn.onrender.com",
+      "eas": {
+        "projectId": "f48931d6-073a-459c-a1ad-0887f928eb8e"
+      }
     }
   }
 }
