@@ -22,9 +22,11 @@ api.interceptors.request.use(
     if (token) {
       config.headers['x-auth-token'] = token;
     }
+    console.log(`[API Request] ${config.method.toUpperCase()} ${config.baseURL}${config.url}`);
     return config;
   },
   (error) => {
+    console.error('[API Request Error]', error);
     return Promise.reject(error);
   }
 );
