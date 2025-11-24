@@ -12,7 +12,9 @@ const {
   completeChallenge,
   getNotifications,
   getChallengeStatus,
-  saveChallengeQuestions
+  saveChallengeQuestions,
+  markNotificationRead,
+  deleteNotification
 } = require('../controllers/socialController');
 
 router.get('/search', auth, searchUsers);
@@ -28,5 +30,7 @@ router.get('/challenge/:challengeId/status', auth, getChallengeStatus);
 router.post('/challenge/:challengeId/questions', auth, saveChallengeQuestions);
 
 router.get('/notifications', auth, getNotifications);
+router.put('/notifications/:notificationId/read', auth, markNotificationRead);
+router.delete('/notifications/:notificationId', auth, deleteNotification);
 
 module.exports = router;

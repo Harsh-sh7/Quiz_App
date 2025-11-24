@@ -26,7 +26,8 @@ const UserSchema = new mongoose.Schema({
   friendRequests: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
-  }]
+  }],
+  pushToken: { type: String, default: '' },
 });
 
 module.exports = mongoose.model('User', UserSchema);

@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
 
 import { AuthProvider, AuthContext } from './src/context/AuthContext';
+import { NotificationProvider } from './src/context/NotificationContext';
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
 import WelcomeScreen from './src/screens/WelcomeScreen';
@@ -55,7 +56,9 @@ const AppNavigator = () => {
 export default function App() {
   return (
     <AuthProvider>
-      <AppNavigator />
+      <NotificationProvider>
+        <AppNavigator />
+      </NotificationProvider>
     </AuthProvider>
   );
 }

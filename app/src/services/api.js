@@ -124,6 +124,16 @@ export const saveChallengeQuestions = async (challengeId, questions) => {
   return response.data;
 };
 
+export const markNotificationRead = async (notificationId) => {
+  const response = await api.put(`/social/notifications/${notificationId}/read`);
+  return response.data;
+};
+
+export const deleteNotification = async (notificationId) => {
+  const response = await api.delete(`/social/notifications/${notificationId}`);
+  return response.data;
+};
+
 export const saveScore = async (scoreData) => {
   const response = await api.post('/quiz/save-score', scoreData);
   return response.data;

@@ -11,6 +11,7 @@ import {
   ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNotification } from '../context/NotificationContext';
 import { 
   searchUsers, 
   sendFriendRequest, 
@@ -20,10 +21,12 @@ import {
   getPendingChallenges,
   getCategories,
   createChallenge,
-  acceptChallenge
+  acceptChallenge,
+  deleteNotification
 } from '../services/api';
 
 const SocialScreen = ({ navigation }) => {
+  const { showNotification } = useNotification();
   const [activeTab, setActiveTab] = useState('friends');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -36,11 +39,63 @@ const SocialScreen = ({ navigation }) => {
   const [selectedFriend, setSelectedFriend] = useState(null);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [lastNotificationCount, setLastNotificationCount] = useState(0);
 
   useEffect(() => {
     fetchData();
     fetchCategoriesList();
-  }, [activeTab]);
+    
+    // Poll for new notifications every 5 seconds
+    const notificationPoll = setInterval(async () => {
+      try {
+        const notifs = await getNotifications();
+        
+        // Check for new notifications
+        if (notifs.length > lastNotificationCount) {
+          const newNotifs = notifs.slice(0, notifs.length - lastNotificationCount);
+          
+          // Show in-app toast for each new notification
+          newNotifs.forEach(notif => {
+            if (notif.type === 'challenge_received') {
+              showNotification(
+                'New Challenge!',
+                `${notif.fromUser?.username} challenged you to a ${notif.data.category} quiz!`,
+                'challenge',
+                () => {
+                  // Navigate to notifications tab
+                  setActiveTab('notifications');
+                }
+              );
+            } else if (notif.type === 'friend_request') {
+              showNotification(
+                'Friend Request',
+                `${notif.fromUser?.username} sent you a friend request`,
+                'friend',
+                () => {
+                  setActiveTab('notifications');
+                }
+              );
+            } else if (notif.type === 'challenge_accepted') {
+              showNotification(
+                'Challenge Accepted!',
+                `${notif.fromUser?.username} accepted your challenge!`,
+                'success'
+              );
+            }
+          });
+        }
+        
+        setLastNotificationCount(notifs.length);
+        if (activeTab === 'notifications') {
+          setNotifications(notifs);
+        }
+      } catch (error) {
+        console.error('Error polling notifications:', error);
+      }
+    }, 5000);
+    
+    return () => clearInterval(notificationPoll);
+  }, [activeTab, lastNotificationCount]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -51,6 +106,7 @@ const SocialScreen = ({ navigation }) => {
       } else {
         const notifs = await getNotifications();
         setNotifications(notifs);
+        setLastNotificationCount(notifs.length);
       }
     } catch (error) {
       console.error(error);
@@ -92,9 +148,15 @@ const SocialScreen = ({ navigation }) => {
     }
   };
 
-  const handleAcceptRequest = async (userId) => {
+  const handleAcceptRequest = async (userId, notificationId) => {
     try {
       await acceptFriendRequest(userId);
+      
+      // Delete the notification
+      if (notificationId) {
+        await deleteNotification(notificationId);
+      }
+      
       fetchData(); // Refresh notifications
       Alert.alert('Success', 'Friend request accepted!');
     } catch (error) {
@@ -153,10 +215,15 @@ const SocialScreen = ({ navigation }) => {
     });
   };
   
-  const handleAcceptChallenge = async (challengeId, category, difficulty, challengerName) => {
+  const handleAcceptChallenge = async (challengeId, category, difficulty, challengerName, notificationId) => {
     try {
       const cat = categories.find(c => c.name === category);
       const catId = cat ? cat.id : 9;
+      
+      // Delete the notification
+      if (notificationId) {
+        await deleteNotification(notificationId);
+      }
       
       // Navigate to lobby as challenged user (will auto-accept and start countdown)
       navigation.navigate('ChallengeLobby', {
@@ -225,7 +292,7 @@ const SocialScreen = ({ navigation }) => {
           </View>
           <TouchableOpacity 
             style={styles.acceptButton}
-            onPress={() => handleAcceptRequest(item.fromUser._id)}
+            onPress={() => handleAcceptRequest(item.fromUser._id, item._id)}
           >
             <Text style={styles.acceptButtonText}>Accept</Text>
           </TouchableOpacity>
@@ -245,7 +312,7 @@ const SocialScreen = ({ navigation }) => {
           </View>
           <TouchableOpacity 
             style={styles.playButton}
-            onPress={() => handleAcceptChallenge(item.data.challengeId, item.data.category, item.data.difficulty, item.fromUser?.username)}
+            onPress={() => handleAcceptChallenge(item.data.challengeId, item.data.category, item.data.difficulty, item.fromUser?.username, item._id)}
           >
             <Text style={styles.playButtonText}>Accept</Text>
           </TouchableOpacity>

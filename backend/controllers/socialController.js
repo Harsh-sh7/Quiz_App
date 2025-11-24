@@ -255,6 +255,43 @@ exports.getNotifications = async (req, res) => {
   }
 };
 
+// Mark Notification as Read
+exports.markNotificationRead = async (req, res) => {
+  try {
+    const { notificationId } = req.params;
+    const notification = await Notification.findById(notificationId);
+    
+    if (!notification) return res.status(404).json({ msg: 'Notification not found' });
+    if (notification.user.toString() !== req.user.id) return res.status(401).json({ msg: 'Not authorized' });
+    
+    notification.read = true;
+    await notification.save();
+    
+    res.json({ msg: 'Notification marked as read' });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+};
+
+// Delete Notification
+exports.deleteNotification = async (req, res) => {
+  try {
+    const { notificationId } = req.params;
+    const notification = await Notification.findById(notificationId);
+    
+    if (!notification) return res.status(404).json({ msg: 'Notification not found' });
+    if (notification.user.toString() !== req.user.id) return res.status(401).json({ msg: 'Not authorized' });
+    
+    await notification.deleteOne();
+    
+    res.json({ msg: 'Notification deleted' });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+};
+
 // Get Challenge Status
 exports.getChallengeStatus = async (req, res) => {
   try {
