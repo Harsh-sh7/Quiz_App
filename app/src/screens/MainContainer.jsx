@@ -1,13 +1,21 @@
-import React, { useState, useContext, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { AuthContext } from '../context/AuthContext';
-import { getUserScores, getLeaderboard, getCategories } from '../services/api';
+import React, { useState, useContext, useEffect } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Dimensions,
+  ActivityIndicator,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { AuthContext } from "../context/AuthContext";
+import { getUserScores, getLeaderboard, getCategories } from "../services/api";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 const MainContainer = ({ navigation }) => {
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTab] = useState("home");
   const [loading, setLoading] = useState(false);
   const [recentScores, setRecentScores] = useState([]);
   const [allScores, setAllScores] = useState([]);
@@ -23,7 +31,7 @@ const MainContainer = ({ navigation }) => {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'leaderboard') {
+    if (activeTab === "leaderboard") {
       fetchLeaderboard();
     }
   }, [activeTab, selectedCategory]);
@@ -44,7 +52,7 @@ const MainContainer = ({ navigation }) => {
       const data = await getLeaderboard(selectedCategory);
       setLeaderboardData(data);
     } catch (error) {
-      console.error('Leaderboard fetch error:', error);
+      console.error("Leaderboard fetch error:", error);
     } finally {
       setLeaderboardLoading(false);
     }
@@ -55,7 +63,7 @@ const MainContainer = ({ navigation }) => {
       const cats = await getCategories();
       setAvailableCategories(cats);
     } catch (error) {
-      console.error('Categories fetch error:', error);
+      console.error("Categories fetch error:", error);
     }
   };
 
@@ -65,88 +73,157 @@ const MainContainer = ({ navigation }) => {
   };
 
   const categories = [
-    { id: 18, name: 'Technology', difficulty: 'medium', color: '#FF6B6B', icon: '💻' },
-    { id: 21, name: 'Sports', difficulty: 'easy', color: '#4ECDC4', icon: '⚽' },
-    { id: 9, name: 'General', difficulty: 'easy', color: '#95E1D3', icon: '🧠' },
-    { id: 23, name: 'History', difficulty: 'hard', color: '#F38181', icon: '📚' },
-    { id: 17, name: 'Science', difficulty: 'medium', color: '#AA96DA', icon: '🔬' },
-    { id: 11, name: 'Movies', difficulty: 'easy', color: '#FCBAD3', icon: '🎬' },
+    {
+      id: 18,
+      name: "Technology",
+      difficulty: "medium",
+      color: "#FF6B6B",
+      icon: "💻",
+    },
+    {
+      id: 21,
+      name: "Sports",
+      difficulty: "easy",
+      color: "#4ECDC4",
+      icon: "⚽",
+    },
+    {
+      id: 9,
+      name: "General",
+      difficulty: "easy",
+      color: "#95E1D3",
+      icon: "🧠",
+    },
+    {
+      id: 23,
+      name: "History",
+      difficulty: "hard",
+      color: "#F38181",
+      icon: "📚",
+    },
+    {
+      id: 17,
+      name: "Science",
+      difficulty: "medium",
+      color: "#AA96DA",
+      icon: "🔬",
+    },
+    {
+      id: 11,
+      name: "Movies",
+      difficulty: "easy",
+      color: "#FCBAD3",
+      icon: "🎬",
+    },
   ];
 
   const getCategoryName = (catId) => {
-    const cat = categories.find(c => c.id.toString() === catId);
-    return cat ? cat.name : 'Quiz';
+    const cat = categories.find((c) => c.id.toString() === catId);
+    return cat ? cat.name : "Quiz";
   };
 
   const getScoreColor = (rank) => {
-    const colors = ['#000', '#FF6B6B', '#4ECDC4', '#95E1D3', '#F38181', '#AA96DA', '#FCBAD3', '#FFE66D'];
-    return colors[rank - 1] || '#999';
+    const colors = [
+      "#000",
+      "#FF6B6B",
+      "#4ECDC4",
+      "#95E1D3",
+      "#F38181",
+      "#AA96DA",
+      "#FCBAD3",
+      "#FFE66D",
+    ];
+    return colors[rank - 1] || "#999";
   };
 
   const totalQuizzes = allScores.length;
   const totalScore = allScores.reduce((sum, item) => sum + item.score, 0);
-  const totalQuestions = allScores.reduce((sum, item) => sum + item.totalQuestions, 0);
-  const avgPercentage = totalQuestions > 0 ? (totalScore / totalQuestions) * 100 : 0;
+  const totalQuestions = allScores.reduce(
+    (sum, item) => sum + item.totalQuestions,
+    0
+  );
+  const avgPercentage =
+    totalQuestions > 0 ? (totalScore / totalQuestions) * 100 : 0;
 
   const renderHomeTab = () => (
     <ScrollView showsVerticalScrollIndicator={false}>
-        <Text style={styles.description}>
-          Challenge your friends and family with our Quiz app, let's see who comes out on top in the ultimate quiz showdown, and earns the bragging rights!
-        </Text>
+      <Text style={styles.description}>
+        Challenge your friends and family with our Quiz app, let's see who comes
+        out on top in the ultimate quiz showdown, and earns the bragging rights!
+      </Text>
 
-        <Text style={styles.sectionTitle}>Popular Quizies</Text>
-        
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesScroll}>
-          {categories.map((category) => (
-            <TouchableOpacity
-              key={category.id}
-              style={[styles.categoryCard, { backgroundColor: category.color }]}
-              onPress={() => navigation.navigate('Quiz', { category: category.id, difficulty: category.difficulty })}
-            >
-              <View style={styles.categoryHeader}>
-                <View style={styles.categoryTag}>
-                  <Text style={styles.categoryTagText}>{category.name}</Text>
-                </View>
-              </View>
-              
-              <Text style={styles.categoryTitle}>{category.name}</Text>
-              <Text style={styles.categoryDescription}>
-                Explore the world of {category.name.toLowerCase()} with this interesting quiz!
-              </Text>
-              
-              <View style={styles.categoryIllustration}>
-                <Text style={styles.categoryEmoji}>{category.icon}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+      <Text style={styles.sectionTitle}>Popular Quizies</Text>
 
-        <Text style={styles.sectionTitle}>Recent Played</Text>
-        
-        {recentScores.length > 0 ? (
-          recentScores.map((score, index) => (
-            <View key={index} style={styles.recentItem}>
-              <View style={styles.recentIcon}>
-                <Ionicons name="flask" size={22} color="#FF6B6B" />
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.categoriesScroll}
+      >
+        {categories.map((category) => (
+          <TouchableOpacity
+            key={category.id}
+            style={[styles.categoryCard, { backgroundColor: category.color }]}
+            onPress={() =>
+              navigation.navigate("Quiz", {
+                category: category.id,
+                difficulty: category.difficulty,
+              })
+            }
+          >
+            <View style={styles.categoryHeader}>
+              <View style={styles.categoryTag}>
+                <Text style={styles.categoryTagText}>{category.name}</Text>
               </View>
-              <View style={styles.recentInfo}>
-                <Text style={styles.recentTitle}>{getCategoryName(score.category)}</Text>
-                <Text style={styles.recentScore}>{score.score}/{score.totalQuestions} correct</Text>
-              </View>
-              <TouchableOpacity 
-                style={styles.playAgainButton}
-                onPress={() => navigation.navigate('Quiz', { category: parseInt(score.category), difficulty: score.difficulty })}
-              >
-                <Text style={styles.playAgainText}>Play again</Text>
-              </TouchableOpacity>
             </View>
-          ))
-        ) : (
-          <Text style={styles.noRecent}>No recent quizzes. Start playing!</Text>
-        )}
 
-        <View style={{ height: 120 }} />
+            <Text style={styles.categoryTitle}>{category.name}</Text>
+            <Text style={styles.categoryDescription}>
+              Explore the world of {category.name.toLowerCase()} with this
+              interesting quiz!
+            </Text>
+
+            <View style={styles.categoryIllustration}>
+              <Text style={styles.categoryEmoji}>{category.icon}</Text>
+            </View>
+          </TouchableOpacity>
+        ))}
       </ScrollView>
+
+      <Text style={styles.sectionTitle}>Recent Played</Text>
+
+      {recentScores.length > 0 ? (
+        recentScores.map((score, index) => (
+          <View key={index} style={styles.recentItem}>
+            <View style={styles.recentIcon}>
+              <Ionicons name="flask" size={22} color="#FF6B6B" />
+            </View>
+            <View style={styles.recentInfo}>
+              <Text style={styles.recentTitle}>
+                {getCategoryName(score.category)}
+              </Text>
+              <Text style={styles.recentScore}>
+                {score.score}/{score.totalQuestions} correct
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.playAgainButton}
+              onPress={() =>
+                navigation.navigate("Quiz", {
+                  category: parseInt(score.category),
+                  difficulty: score.difficulty,
+                })
+              }
+            >
+              <Text style={styles.playAgainText}>Play again</Text>
+            </TouchableOpacity>
+          </View>
+        ))
+      ) : (
+        <Text style={styles.noRecent}>No recent quizzes. Start playing!</Text>
+      )}
+
+      <View style={{ height: 120 }} />
+    </ScrollView>
   );
 
   const renderLeaderboardTab = () => {
@@ -168,83 +245,114 @@ const MainContainer = ({ navigation }) => {
         <View style={styles.emptyLeaderboard}>
           <Ionicons name="trophy-outline" size={80} color="#999" />
           <Text style={styles.emptyTitle}>No Data Yet</Text>
-          <Text style={styles.emptyText}>Be the first to play and top the leaderboard!</Text>
+          <Text style={styles.emptyText}>
+            Be the first to play and top the leaderboard!
+          </Text>
         </View>
       );
     }
 
     return (
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.leaderboardContent}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.leaderboardContent}
+      >
         {/* Category Filter */}
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.categoryFilter}
           contentContainerStyle={styles.categoryFilterContent}
         >
           <TouchableOpacity
-            style={[styles.filterChip, !selectedCategory && styles.filterChipActive]}
+            style={[
+              styles.filterChip,
+              !selectedCategory && styles.filterChipActive,
+            ]}
             onPress={() => setSelectedCategory(null)}
           >
-            <Text style={[styles.filterChipText, !selectedCategory && styles.filterChipTextActive]}>
+            <Text
+              style={[
+                styles.filterChipText,
+                !selectedCategory && styles.filterChipTextActive,
+              ]}
+            >
               All
             </Text>
           </TouchableOpacity>
           {availableCategories.map((cat, index) => (
             <TouchableOpacity
               key={index}
-              style={[styles.filterChip, selectedCategory === cat && styles.filterChipActive]}
+              style={[
+                styles.filterChip,
+                selectedCategory === cat && styles.filterChipActive,
+              ]}
               onPress={() => setSelectedCategory(cat)}
             >
-              <Text style={[styles.filterChipText, selectedCategory === cat && styles.filterChipTextActive]}>
+              <Text
+                style={[
+                  styles.filterChipText,
+                  selectedCategory === cat && styles.filterChipTextActive,
+                ]}
+              >
                 {getCategoryName(cat)}
               </Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
 
-       {/* Top 3 Podium */}
-{topThree.length >= 1 && (
-  <View style={styles.podium}>
-    
-    {/* 2nd Place */}
-    {topThree[1] && (
-      <View style={styles.podiumItem}>
-        <View style={[styles.avatar, styles.avatar2]}>
-          <Text style={styles.avatarText}>{topThree[1]?.username?.charAt(0).toUpperCase()}</Text>
-        </View>
-        <Text style={styles.podiumBadge}>🥈</Text>
-        <Text style={styles.podiumName}>{topThree[1]?.username}</Text>
-        <Text style={styles.podiumPoints}>{topThree[1]?.percentage?.toFixed(0)}%</Text>
-      </View>
-    )}
+        {/* Top 3 Podium */}
+        {topThree.length >= 1 && (
+          <View style={styles.podium}>
+            {/* 2nd Place */}
+            {topThree[1] && (
+              <View style={styles.podiumItem}>
+                <View style={[styles.avatar, styles.avatar2]}>
+                  <Text style={styles.avatarText}>
+                    {topThree[1]?.username?.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+                <Text style={styles.podiumBadge}>🥈</Text>
+                <Text style={styles.podiumName}>{topThree[1]?.username}</Text>
+                <Text style={styles.podiumPoints}>
+                  {topThree[1]?.percentage?.toFixed(0)}%
+                </Text>
+              </View>
+            )}
 
-    {/* 1st Place */}
-    {topThree[0] && (
-      <View style={[styles.podiumItem, styles.podiumWinner]}>
-        <View style={[styles.avatar, styles.avatar1]}>
-          <Text style={styles.avatarText}>{topThree[0]?.username?.charAt(0).toUpperCase()}</Text>
-        </View>
-        <Text style={styles.podiumBadge}>🥇</Text>
-        <Text style={styles.podiumName}>{topThree[0]?.username}</Text>
-        <Text style={styles.podiumPoints}>{topThree[0]?.percentage?.toFixed(0)}%</Text>
-      </View>
-    )}
+            {/* 1st Place */}
+            {topThree[0] && (
+              <View style={[styles.podiumItem, styles.podiumWinner]}>
+                <View style={[styles.avatar, styles.avatar1]}>
+                  <Text style={styles.avatarText}>
+                    {topThree[0]?.username?.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+                <Text style={styles.podiumBadge}>🥇</Text>
+                <Text style={styles.podiumName}>{topThree[0]?.username}</Text>
+                <Text style={styles.podiumPoints}>
+                  {topThree[0]?.percentage?.toFixed(0)}%
+                </Text>
+              </View>
+            )}
 
-    {/* 3rd Place */}
-    {topThree[2] && (
-      <View style={styles.podiumItem}>
-        <View style={[styles.avatar, styles.avatar3]}>
-          <Text style={styles.avatarText}>{topThree[2]?.username?.charAt(0).toUpperCase()}</Text>
-        </View>
-        <Text style={styles.podiumBadge}>🥉</Text>
-        <Text style={styles.podiumName}>{topThree[2]?.username}</Text>
-        <Text style={styles.podiumPoints}>{topThree[2]?.percentage?.toFixed(0)}%</Text>
-      </View>
-    )}
-
-  </View>
-)}
+            {/* 3rd Place */}
+            {topThree[2] && (
+              <View style={styles.podiumItem}>
+                <View style={[styles.avatar, styles.avatar3]}>
+                  <Text style={styles.avatarText}>
+                    {topThree[2]?.username?.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+                <Text style={styles.podiumBadge}>🥉</Text>
+                <Text style={styles.podiumName}>{topThree[2]?.username}</Text>
+                <Text style={styles.podiumPoints}>
+                  {topThree[2]?.percentage?.toFixed(0)}%
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Leaderboard List */}
         {rest.map((player, index) => {
@@ -253,19 +361,35 @@ const MainContainer = ({ navigation }) => {
             <View key={player.userId || index} style={styles.listItem}>
               <View style={styles.listLeft}>
                 <View style={styles.listAvatar}>
-                  <Text style={styles.listAvatarText}>{player.username?.charAt(0).toUpperCase()}</Text>
+                  <Text style={styles.listAvatarText}>
+                    {player.username?.charAt(0).toUpperCase()}
+                  </Text>
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.listName}>{player.username}</Text>
-                  <Text style={styles.listPoints}>{player.totalQuizzes} quizzes</Text>
+                  <Text style={styles.listPoints}>
+                    {player.totalQuizzes} quizzes
+                  </Text>
                 </View>
               </View>
               <View style={styles.listRight}>
-                <View style={[styles.rankBadge, { backgroundColor: getScoreColor(rank) }]}>
+                <View
+                  style={[
+                    styles.rankBadge,
+                    { backgroundColor: getScoreColor(rank) },
+                  ]}
+                >
                   <Text style={styles.rankText}>#{rank}</Text>
                 </View>
-                <View style={[styles.scoreBadge, { backgroundColor: getScoreColor(rank) }]}>
-                  <Text style={styles.scoreText}>{player.percentage?.toFixed(0)}%</Text>
+                <View
+                  style={[
+                    styles.scoreBadge,
+                    { backgroundColor: getScoreColor(rank) },
+                  ]}
+                >
+                  <Text style={styles.scoreText}>
+                    {player.percentage?.toFixed(0)}%
+                  </Text>
                 </View>
               </View>
             </View>
@@ -277,6 +401,7 @@ const MainContainer = ({ navigation }) => {
 
   const renderProfileTab = () => (
     <View>
+      <View>
       <View style={styles.statsGrid}>
         <View style={styles.statCard}>
           <Text style={styles.statValue}>{totalQuizzes}</Text>
@@ -290,6 +415,7 @@ const MainContainer = ({ navigation }) => {
           <Text style={styles.statValue}>{totalScore}</Text>
           <Text style={styles.statLabel}>Correct</Text>
         </View>
+        </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -300,22 +426,45 @@ const MainContainer = ({ navigation }) => {
               <View key={index} style={styles.scoreItem}>
                 <View style={styles.scoreHeader}>
                   <View style={styles.scoreLeft}>
-                    <Text style={styles.categoryNameText}>{getCategoryName(score.category)}</Text>
-                    <Text style={styles.dateText}>{new Date(score.date).toLocaleDateString()}</Text>
+                    <Text style={styles.categoryNameText}>
+                      {getCategoryName(score.category)}
+                    </Text>
+                    <Text style={styles.dateText}>
+                      {new Date(score.date).toLocaleDateString()}
+                    </Text>
                   </View>
-                  <View style={[styles.difficultyBadge, { backgroundColor: '#FF6B6B' }]}>
-                    <Text style={styles.difficultyText}>{score.difficulty.toUpperCase()}</Text>
+                  <View
+                    style={[
+                      styles.difficultyBadge,
+                      { backgroundColor: "#FF6B6B" },
+                    ]}
+                  >
+                    <Text style={styles.difficultyText}>
+                      {score.difficulty.toUpperCase()}
+                    </Text>
                   </View>
                 </View>
-                
+
                 <View style={styles.scoreBody}>
                   <View style={styles.scoreCircle}>
-                    <Text style={styles.scorePercentage}>{percentage.toFixed(0)}%</Text>
+                    <Text style={styles.scorePercentage}>
+                      {percentage.toFixed(0)}%
+                    </Text>
                   </View>
                   <View style={styles.scoreDetails}>
-                    <Text style={styles.scoreText}>{score.score}/{score.totalQuestions} Correct</Text>
+                    <Text style={styles.scoreText}>
+                      {score.score}/{score.totalQuestions} Correct
+                    </Text>
                     <View style={styles.progressBar}>
-                      <View style={[styles.progressFill, { width: `${percentage}%`, backgroundColor: '#FF6B6B' }]} />
+                      <View
+                        style={[
+                          styles.progressFill,
+                          {
+                            width: `${percentage}%`,
+                            backgroundColor: "#FF6B6B",
+                          },
+                        ]}
+                      />
                     </View>
                   </View>
                 </View>
@@ -326,7 +475,9 @@ const MainContainer = ({ navigation }) => {
           <View style={styles.emptyContainer}>
             <Ionicons name="stats-chart-outline" size={80} color="#999" />
             <Text style={styles.emptyTitle}>No Quizzes Yet</Text>
-            <Text style={styles.emptyText}>Start taking quizzes to see your stats here!</Text>
+            <Text style={styles.emptyText}>
+              Start taking quizzes to see your stats here!
+            </Text>
           </View>
         )}
         <View style={{ height: 120 }} />
@@ -339,9 +490,9 @@ const MainContainer = ({ navigation }) => {
       <View style={styles.header}>
         <View>
           <Text style={styles.logo}>
-            {activeTab === 'home' && 'Quizie'}
-            {activeTab === 'leaderboard' && 'Leaderboard'}
-            {activeTab === 'profile' && 'My Stats'}
+            {activeTab === "home" && "Quizie"}
+            {activeTab === "leaderboard" && "Leaderboard"}
+            {activeTab === "profile" && "My Stats"}
           </Text>
         </View>
         <TouchableOpacity style={styles.coinBadge} onPress={logout}>
@@ -356,47 +507,59 @@ const MainContainer = ({ navigation }) => {
       )}
 
       <View style={styles.content}>
-        {activeTab === 'home' && renderHomeTab()}
-        {activeTab === 'leaderboard' && renderLeaderboardTab()}
-        {activeTab === 'profile' && renderProfileTab()}
+        {activeTab === "home" && renderHomeTab()}
+        {activeTab === "leaderboard" && renderLeaderboardTab()}
+        {activeTab === "profile" && renderProfileTab()}
       </View>
 
       {/* Floating Bottom Navigation */}
       <View style={styles.bottomNav}>
-        <TouchableOpacity 
-          style={[styles.navItem, activeTab === 'home' && styles.navItemActive]}
-          onPress={() => handleTabChange('home')}
+        <TouchableOpacity
+          style={[styles.navItem, activeTab === "home" && styles.navItemActive]}
+          onPress={() => handleTabChange("home")}
         >
-          <Ionicons 
-            name={activeTab === 'home' ? "home" : "home-outline"} 
-            size={22} 
-            color={activeTab === 'home' ? '#FFF' : '#999'} 
+          <Ionicons
+            name={activeTab === "home" ? "home" : "home-outline"}
+            size={22}
+            color={activeTab === "home" ? "#FFF" : "#999"}
           />
-          {activeTab === 'home' && <Text style={styles.navLabelActive}>Home</Text>}
+          {activeTab === "home" && (
+            <Text style={styles.navLabelActive}>Home</Text>
+          )}
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.navItem, activeTab === 'leaderboard' && styles.navItemActive]}
-          onPress={() => handleTabChange('leaderboard')}
+
+        <TouchableOpacity
+          style={[
+            styles.navItem,
+            activeTab === "leaderboard" && styles.navItemActive,
+          ]}
+          onPress={() => handleTabChange("leaderboard")}
         >
-          <Ionicons 
-            name={activeTab === 'leaderboard' ? "trophy" : "trophy-outline"} 
-            size={22} 
-            color={activeTab === 'leaderboard' ? '#FFF' : '#999'} 
+          <Ionicons
+            name={activeTab === "leaderboard" ? "trophy" : "trophy-outline"}
+            size={22}
+            color={activeTab === "leaderboard" ? "#FFF" : "#999"}
           />
-          {activeTab === 'leaderboard' && <Text style={styles.navLabelActive}>Ranking</Text>}
+          {activeTab === "leaderboard" && (
+            <Text style={styles.navLabelActive}>Ranking</Text>
+          )}
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.navItem, activeTab === 'profile' && styles.navItemActive]}
-          onPress={() => handleTabChange('profile')}
+
+        <TouchableOpacity
+          style={[
+            styles.navItem,
+            activeTab === "profile" && styles.navItemActive,
+          ]}
+          onPress={() => handleTabChange("profile")}
         >
-          <Ionicons 
-            name={activeTab === 'profile' ? "person" : "person-outline"} 
-            size={22} 
-            color={activeTab === 'profile' ? '#FFF' : '#999'} 
+          <Ionicons
+            name={activeTab === "profile" ? "person" : "person-outline"}
+            size={22}
+            color={activeTab === "profile" ? "#FFF" : "#999"}
           />
-          {activeTab === 'profile' && <Text style={styles.navLabelActive}>Profile</Text>}
+          {activeTab === "profile" && (
+            <Text style={styles.navLabelActive}>Profile</Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -406,30 +569,30 @@ const MainContainer = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F1E8',
+    backgroundColor: "#F5F1E8",
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
   },
   logo: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#000',
+    fontWeight: "bold",
+    color: "#000",
   },
   coinBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 5,
   },
   coinText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
+    fontWeight: "600",
+    color: "#000",
   },
   content: {
     flex: 1,
@@ -439,26 +602,26 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   loadingOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(245, 241, 232, 0.8)',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(245, 241, 232, 0.8)",
     zIndex: 999,
   },
   description: {
     fontSize: 13,
-    color: '#666',
+    color: "#666",
     lineHeight: 20,
     marginBottom: 20,
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#000',
+    fontWeight: "bold",
+    color: "#000",
     marginBottom: 15,
   },
   categoriesScroll: {
@@ -474,43 +637,43 @@ const styles = StyleSheet.create({
     minHeight: 280,
   },
   categoryHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 15,
   },
   categoryTag: {
-    backgroundColor: '#000',
+    backgroundColor: "#000",
     paddingHorizontal: 15,
     paddingVertical: 6,
     borderRadius: 15,
   },
   categoryTagText: {
-    color: '#FFF',
+    color: "#FFF",
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   favoriteButton: {
     width: 35,
     height: 35,
     borderRadius: 17.5,
-    backgroundColor: '#FFF',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#FFF",
+    justifyContent: "center",
+    alignItems: "center",
   },
   categoryTitle: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#FFF',
+    fontWeight: "bold",
+    color: "#FFF",
     marginBottom: 10,
   },
   categoryDescription: {
     fontSize: 12,
-    color: '#FFF',
+    color: "#FFF",
     lineHeight: 18,
     opacity: 0.9,
   },
   categoryIllustration: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 20,
     right: 20,
   },
@@ -519,14 +682,14 @@ const styles = StyleSheet.create({
     opacity: 0.3,
   },
   recentItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFF",
     marginBottom: 12,
     padding: 15,
     borderRadius: 15,
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
@@ -535,9 +698,9 @@ const styles = StyleSheet.create({
     width: 45,
     height: 45,
     borderRadius: 22.5,
-    backgroundColor: '#FFE5E5',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#FFE5E5",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
   },
   recentInfo: {
@@ -545,39 +708,39 @@ const styles = StyleSheet.create({
   },
   recentTitle: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#000',
+    fontWeight: "600",
+    color: "#000",
     marginBottom: 3,
   },
   recentScore: {
     fontSize: 12,
-    color: '#666',
+    color: "#666",
   },
   playAgainButton: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: "#FF6B6B",
     paddingHorizontal: 18,
     paddingVertical: 8,
     borderRadius: 15,
   },
   playAgainText: {
-    color: '#FFF',
+    color: "#FFF",
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   noRecent: {
-    textAlign: 'center',
-    color: '#999',
+    textAlign: "center",
+    color: "#999",
     fontSize: 14,
     paddingVertical: 20,
   },
   podium: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'flex-end',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "flex-end",
     marginBottom: 30,
   },
   podiumItem: {
-    alignItems: 'center',
+    alignItems: "center",
     marginHorizontal: 10,
   },
   podiumWinner: {
@@ -587,25 +750,25 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 35,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 8,
     borderWidth: 3,
   },
   avatar1: {
-    backgroundColor: '#FFE5B4',
-    borderColor: '#FFD700',
+    backgroundColor: "#FFE5B4",
+    borderColor: "#FFD700",
     width: 80,
     height: 80,
     borderRadius: 40,
   },
   avatar2: {
-    backgroundColor: '#E8E8E8',
-    borderColor: '#C0C0C0',
+    backgroundColor: "#E8E8E8",
+    borderColor: "#C0C0C0",
   },
   avatar3: {
-    backgroundColor: '#FFE4C4',
-    borderColor: '#CD7F32',
+    backgroundColor: "#FFE4C4",
+    borderColor: "#CD7F32",
   },
   avatarText: {
     fontSize: 35,
@@ -616,40 +779,40 @@ const styles = StyleSheet.create({
   },
   podiumName: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: '#000',
+    fontWeight: "bold",
+    color: "#000",
     marginBottom: 3,
   },
   podiumPoints: {
     fontSize: 11,
-    color: '#666',
+    color: "#666",
   },
   listItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#FFF',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#FFF",
     padding: 15,
     borderRadius: 15,
     marginBottom: 12,
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
   },
   listLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
   },
   listAvatar: {
     width: 45,
     height: 45,
     borderRadius: 22.5,
-    backgroundColor: '#F0F0F0',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#F0F0F0",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
   },
   listAvatarText: {
@@ -657,17 +820,17 @@ const styles = StyleSheet.create({
   },
   listName: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#000',
+    fontWeight: "600",
+    color: "#000",
     marginBottom: 3,
   },
   listPoints: {
     fontSize: 12,
-    color: '#666',
+    color: "#666",
   },
   listRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   rankBadge: {
@@ -676,65 +839,66 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   rankText: {
-    color: '#FFF',
+    color: "#FFF",
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   scoreBadge: {
-    width: 35,
-    height: 35,
-    borderRadius: 17.5,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 45,
+    height: 45,
+    borderRadius: "50%",
+    justifyContent: "center",
+    alignItems: "center",
   },
   scoreText: {
-    color: '#FFF',
-    fontSize: 12,
-    fontWeight: 'bold',
+    color: "#FFF",
+    padding: 90,
+    fontSize: 10,
+    fontWeight: "bold",
   },
   statsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     gap: 10,
     marginBottom: 20,
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: "#FFF",
     borderRadius: 15,
     padding: 15,
-    alignItems: 'center',
+    alignItems: "center",
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
   },
   statValue: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000',
+    fontWeight: "bold",
+    color: "#000",
     marginBottom: 5,
   },
   statLabel: {
     fontSize: 12,
-    color: '#666',
+    color: "#666",
   },
   scoreItem: {
-    backgroundColor: '#FFF',
+    backgroundColor: "#FFF",
     borderRadius: 20,
     padding: 20,
     marginBottom: 15,
     elevation: 3,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
   },
   scoreHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginBottom: 15,
   },
   scoreLeft: {
@@ -742,13 +906,13 @@ const styles = StyleSheet.create({
   },
   categoryNameText: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
     marginBottom: 5,
   },
   dateText: {
     fontSize: 12,
-    color: '#999',
+    color: "#999",
   },
   difficultyBadge: {
     paddingHorizontal: 12,
@@ -757,95 +921,95 @@ const styles = StyleSheet.create({
   },
   difficultyText: {
     fontSize: 10,
-    fontWeight: 'bold',
-    color: '#FFF',
+    fontWeight: "bold",
+    color: "#FFF",
   },
   scoreBody: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 15,
   },
   scoreCircle: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#667eea',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#667eea",
+    justifyContent: "center",
+    alignItems: "center",
   },
   scorePercentage: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: "bold",
+    color: "#fff",
   },
   scoreDetails: {
     flex: 1,
   },
   scoreText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: "600",
+    color: "#333",
     marginBottom: 8,
   },
   progressBar: {
     height: 8,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: "#e0e0e0",
     borderRadius: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   progressFill: {
-    height: '100%',
+    height: "100%",
     borderRadius: 4,
   },
   emptyContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 60,
   },
   emptyTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
     marginTop: 20,
     marginBottom: 10,
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
+    color: "#666",
+    textAlign: "center",
   },
   bottomNav: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 20,
     left: 20,
     right: 20,
-    flexDirection: 'row',
-    backgroundColor: '#FFF',
+    flexDirection: "row",
+    backgroundColor: "#FFF",
     paddingVertical: 12,
     paddingHorizontal: 10,
     borderRadius: 25,
     elevation: 10,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.2,
     shadowRadius: 15,
   },
   navItem: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 8,
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     gap: 8,
     borderRadius: 20,
   },
   navItemActive: {
-    backgroundColor: '#000',
+    backgroundColor: "#000",
     paddingHorizontal: 15,
   },
   navLabelActive: {
     fontSize: 12,
-    color: '#FFF',
-    fontWeight: '600',
+    color: "#FFF",
+    fontWeight: "600",
   },
   categoryFilter: {
     marginBottom: 20,
@@ -859,51 +1023,52 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: '#FFF',
+    backgroundColor: "#FFF",
     borderWidth: 2,
-    borderColor: '#E0E0E0',
+    borderColor: "#E0E0E0",
   },
   filterChipActive: {
-    backgroundColor: '#000',
-    borderColor: '#000',
+    backgroundColor: "#000",
+    borderColor: "#000",
   },
   filterChipText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
+    fontWeight: "600",
+    color: "#666",
   },
   filterChipTextActive: {
-    color: '#FFF',
+    color: "#FFF",
   },
   loadingContainer: {
     paddingVertical: 100,
-    alignItems: 'center',
+    alignItems: "center",
   },
   emptyLeaderboard: {
     paddingVertical: 80,
-    alignItems: 'center',
+    alignItems: "center",
   },
   logoutButton: {
-    backgroundColor: '#FF6B6B',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#FF6B6B",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 15,
     paddingHorizontal: 30,
     borderRadius: 12,
     marginVertical: 30,
     gap: 10,
     elevation: 3,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
   },
   logoutButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFF',
+    fontWeight: "600",
+    color: "#FFF",
   },
 });
+
 
 export default MainContainer;

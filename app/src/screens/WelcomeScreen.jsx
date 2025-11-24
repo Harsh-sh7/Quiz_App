@@ -8,7 +8,7 @@ const WelcomeScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.logo}>Quiz 🏆</Text>
+        <Text style={styles.logo}>Quizie</Text>
         
         <Image
           source={{ uri: 'https://img.freepik.com/free-vector/students-studying-together-concept-illustration_114360-8004.jpg' }}
@@ -18,7 +18,7 @@ const WelcomeScreen = ({ navigation }) => {
         
         <Text style={styles.title}>Play to Gain Your Knowledge</Text>
         <Text style={styles.subtitle}>
-          They have downloaded gmail and seems to be working for now I also believe it's important for every member
+         Test your knowledge across many fields, and compete in a real time working leaderboard...
         </Text>
         
         <TouchableOpacity 
