@@ -11,6 +11,8 @@ import WelcomeScreen from './src/screens/WelcomeScreen';
 import MainContainer from './src/screens/MainContainer';
 import QuizScreen from './src/screens/QuizScreen';
 import ResultsScreen from './src/screens/ResultsScreen';
+import ChallengeLobbyScreen from './src/screens/ChallengeLobbyScreen';
+import ChallengeResultsScreen from './src/screens/ChallengeResultsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -39,8 +41,10 @@ const AppNavigator = () => {
           <>
             <Stack.Screen name="Welcome" component={WelcomeScreen} />
             <Stack.Screen name="Main" component={MainContainer} />
+            <Stack.Screen name="ChallengeLobby" component={ChallengeLobbyScreen} />
             <Stack.Screen name="Quiz" component={QuizScreen} />
             <Stack.Screen name="Results" component={ResultsScreen} />
+            <Stack.Screen name="ChallengeResults" component={ChallengeResultsScreen} />
           </>
         )}
       </Stack.Navigator>

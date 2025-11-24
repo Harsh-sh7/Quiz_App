@@ -87,7 +87,17 @@ exports.getLeaderboard = async (req, res) => {
 
 exports.getCategories = async (req, res) => {
   try {
-    const categories = await Score.distinct('category');
+    // Return a predefined list of categories with metadata
+    const categories = [
+      { id: 9, name: 'General Knowledge', icon: '🧠', color: '#FF6B6B', difficulty: 'medium' },
+      { id: 18, name: 'Computers', icon: '💻', color: '#4ECDC4', difficulty: 'medium' },
+      { id: 21, name: 'Sports', icon: '⚽', color: '#45B7D1', difficulty: 'medium' },
+      { id: 23, name: 'History', icon: '📜', color: '#96CEB4', difficulty: 'medium' },
+      { id: 17, name: 'Science', icon: '🔬', color: '#FFEEAD', difficulty: 'medium' },
+      { id: 11, name: 'Film', icon: '🎬', color: '#D4A5A5', difficulty: 'medium' },
+      { id: 12, name: 'Music', icon: '🎵', color: '#9B59B6', difficulty: 'medium' },
+      { id: 22, name: 'Geography', icon: '🌍', color: '#3498DB', difficulty: 'medium' },
+    ];
     res.json(categories);
   } catch (err) {
     console.error(err.message);

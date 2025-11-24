@@ -1,22 +1,49 @@
 import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { saveScore } from '../services/api';
+import { saveScore, createChallenge, completeChallenge } from '../services/api';
 
 const { width } = Dimensions.get('window');
 
 const ResultsScreen = ({ route, navigation }) => {
-  const { score, total, category, difficulty } = route.params;
+  const { 
+    score, 
+    total, 
+    category, 
+    difficulty,
+    challengeMode,
+    challengedId,
+    isChallengeResponse,
+    challengeId
+  } = route.params;
 
   useEffect(() => {
     const saveUserScore = async () => {
       try {
-        await saveScore({
-          score,
-          totalQuestions: total,
-          category,
-          difficulty,
-        });
+        if (challengeMode) {
+          await createChallenge({
+            challengedId,
+            category,
+            difficulty,
+            score
+          });
+          // Also save as normal score? Maybe not to avoid duplicates or confusion.
+          // But user might want it in their history. Let's save it too.
+          await saveScore({ score, totalQuestions: total, category, difficulty });
+        } else if (isChallengeResponse) {
+          await completeChallenge({
+            challengeId,
+            score
+          });
+          await saveScore({ score, totalQuestions: total, category, difficulty });
+        } else {
+          await saveScore({
+            score,
+            totalQuestions: total,
+            category,
+            difficulty,
+          });
+        }
       } catch (error) {
         console.error('Failed to save score:', error);
       }

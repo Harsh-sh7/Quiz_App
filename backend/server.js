@@ -22,6 +22,7 @@ app.use((req, res, next) => {
 // Define Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/quiz', require('./routes/quiz'));
+app.use('/api/social', require('./routes/social'));
 
 // Health Check / Ping Route
 app.get('/ping', (req, res) => {

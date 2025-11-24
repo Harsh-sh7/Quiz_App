@@ -7,7 +7,9 @@ import {
   ScrollView,
   Dimensions,
   ActivityIndicator,
+  Image,
 } from "react-native";
+import SocialScreen from "./SocialScreen";
 import { Ionicons } from "@expo/vector-icons";
 import { AuthContext } from "../context/AuthContext";
 import { getUserScores, getLeaderboard, getCategories } from "../services/api";
@@ -492,6 +494,7 @@ const MainContainer = ({ navigation }) => {
           <Text style={styles.logo}>
             {activeTab === "home" && "Quizie"}
             {activeTab === "leaderboard" && "Leaderboard"}
+            {activeTab === "social" && "Social Hub"}
             {activeTab === "profile" && "My Stats"}
           </Text>
         </View>
@@ -509,6 +512,7 @@ const MainContainer = ({ navigation }) => {
       <View style={styles.content}>
         {activeTab === "home" && renderHomeTab()}
         {activeTab === "leaderboard" && renderLeaderboardTab()}
+        {activeTab === "social" && <SocialScreen navigation={navigation} />}
         {activeTab === "profile" && renderProfileTab()}
       </View>
 
@@ -542,6 +546,23 @@ const MainContainer = ({ navigation }) => {
           />
           {activeTab === "leaderboard" && (
             <Text style={styles.navLabelActive}>Ranking</Text>
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.navItem,
+            activeTab === "social" && styles.navItemActive,
+          ]}
+          onPress={() => handleTabChange("social")}
+        >
+          <Ionicons
+            name={activeTab === "social" ? "people" : "people-outline"}
+            size={22}
+            color={activeTab === "social" ? "#FFF" : "#999"}
+          />
+          {activeTab === "social" && (
+            <Text style={styles.navLabelActive}>Social</Text>
           )}
         </TouchableOpacity>
 

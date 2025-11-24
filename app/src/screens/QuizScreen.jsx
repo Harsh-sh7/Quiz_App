@@ -3,11 +3,12 @@ import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Dimensions
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { decode } from 'html-entities';
+import { saveScore, getChallengeStatus, saveChallengeQuestions } from '../services/api';
 
 const { width } = Dimensions.get('window');
 
 const QuizScreen = ({ route, navigation }) => {
-  const { category, difficulty } = route.params;
+  const { category, difficulty, challengeMode, challengeId, isChallengeResponse } = route.params;
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [score, setScore] = useState(0);
@@ -19,8 +20,23 @@ const QuizScreen = ({ route, navigation }) => {
     fetchQuestions();
   }, []);
 
-  const fetchQuestions = async () => {
+  const fetchQuestions = async (retryCount = 0) => {
     try {
+      // If this is a challenge and we're the second player (challenger), get stored questions
+      if (challengeMode && !isChallengeResponse) {
+        console.log('Challenger: Fetching stored questions from challenge');
+        const challengeData = await getChallengeStatus(challengeId);
+        
+        if (challengeData.questions && challengeData.questions.length > 0) {
+          console.log('Using stored questions:', challengeData.questions.length);
+          setQuestions(challengeData.questions);
+          setLoading(false);
+          return;
+        }
+      }
+      
+      // Otherwise, fetch new questions from API
+      console.log('Fetching new questions from API');
       const url = `https://opentdb.com/api.php?amount=10&category=${category}&difficulty=${difficulty}&type=multiple`;
       const response = await axios.get(url);
       
@@ -34,10 +50,27 @@ const QuizScreen = ({ route, navigation }) => {
 
       setQuestions(formattedQuestions);
       setLoading(false);
+      
+      // If this is a challenge and we're the first player (challenged), save questions
+      if (challengeMode && isChallengeResponse) {
+        console.log('Challenged user: Saving questions to challenge');
+        await saveChallengeQuestions(challengeId, formattedQuestions);
+      }
     } catch (error) {
-      console.error(error);
-      alert('Failed to load questions');
-      navigation.goBack();
+      console.error('Fetch questions error:', error);
+      
+      // If it's a 429 error and we haven't retried too many times, retry with exponential backoff
+      if (error.response?.status === 429 && retryCount < 3) {
+        const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+        console.log(`Rate limited. Retrying in ${delay}ms... (attempt ${retryCount + 1}/3)`);
+        
+        setTimeout(() => {
+          fetchQuestions(retryCount + 1);
+        }, delay);
+      } else {
+        alert('Failed to load questions. Please try again later.');
+        navigation.goBack();
+      }
     }
   };
 
@@ -60,12 +93,21 @@ const QuizScreen = ({ route, navigation }) => {
         setSelectedAnswer(null);
         setShowResult(false);
       } else {
-        navigation.replace('Results', { 
-          score: newScore, 
-          total: questions.length,
-          category: category.toString(),
-          difficulty 
-        });
+        // Navigate to appropriate results screen
+        if (challengeMode) {
+          navigation.replace('ChallengeResults', {
+            challengeId: challengeId,
+            myScore: newScore,
+            totalQuestions: questions.length
+          });
+        } else {
+          navigation.replace('Results', { 
+            score: newScore, 
+            total: questions.length,
+            category: category.toString(),
+            difficulty
+          });
+        }
       }
     }, 1500);
   };
@@ -75,6 +117,17 @@ const QuizScreen = ({ route, navigation }) => {
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#000" />
         <Text style={styles.loadingText}>Loading Quiz...</Text>
+      </View>
+    );
+  }
+
+  if (!questions || questions.length === 0) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>No questions found.</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginTop: 20, padding: 10, backgroundColor: '#000', borderRadius: 10 }}>
+          <Text style={{ color: '#FFF' }}>Go Back</Text>
+        </TouchableOpacity>
       </View>
     );
   }
