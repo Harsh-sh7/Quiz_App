@@ -212,6 +212,11 @@ const MainContainer = ({ navigation }) => {
         }
       } catch (error) {
         console.error('❌ Error polling notifications:', error);
+        // If unauthorized (token invalid/expired), logout to force re-login
+        if (error.response && error.response.status === 401) {
+          console.log('⚠️ Token expired or invalid, logging out...');
+          logout();
+        }
       }
     }, 5000);
     

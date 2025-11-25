@@ -149,6 +149,11 @@ export const savePushToken = async (token) => {
   return response.data;
 };
 
+export const sendTestPush = async () => {
+  const response = await api.post('/social/test-push');
+  return response.data;
+};
+
 export const deleteNotification = async (notificationId) => {
   const response = await api.delete(`/social/notifications/${notificationId}`);
   return response.data;

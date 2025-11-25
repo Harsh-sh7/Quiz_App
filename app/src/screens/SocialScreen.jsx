@@ -24,8 +24,12 @@ import {
   rejectChallenge,
   deleteNotification,
   getChallengeHistory,
-  clearChallengeHistory
+  clearChallengeHistory,
+  sendTestPush
 } from '../services/api';
+import { usePushNotifications } from '../hooks/usePushNotifications';
+import { useNotification } from '../context/NotificationContext';
+import Constants from 'expo-constants';
 
 const SocialScreen = ({ navigation }) => {
   const [activeTab, setActiveTab] = useState('friends');
@@ -36,6 +40,9 @@ const SocialScreen = ({ navigation }) => {
   const [challengeHistory, setChallengeHistory] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [loading, setLoading] = useState(false);
+  
+  const { expoPushToken } = usePushNotifications();
+  const { showNotification } = useNotification();
   
   // Challenge Modal State
   const [challengeModalVisible, setChallengeModalVisible] = useState(false);
@@ -456,6 +463,12 @@ const SocialScreen = ({ navigation }) => {
           onPress={() => setActiveTab('history')}
         >
           <Text style={[styles.tabText, activeTab === 'history' && styles.activeTabText]}>History</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.tab, activeTab === 'debug' && styles.activeTab]}
+          onPress={() => setActiveTab('debug')}
+        >
+          <Text style={[styles.tabText, activeTab === 'debug' && styles.activeTabText]}>Debug</Text>
         </TouchableOpacity>
       </View>
 

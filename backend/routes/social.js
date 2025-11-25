@@ -17,10 +17,12 @@ const {
   getChallengeHistory,
   clearChallengeHistory,
   markNotificationRead,
-  deleteNotification
+  deleteNotification,
+  sendTestPush
 } = require('../controllers/socialController');
 
 router.get('/search', auth, searchUsers);
+router.post('/test-push', auth, sendTestPush);
 router.post('/friend-request', auth, sendFriendRequest);
 router.post('/friend-accept', auth, acceptFriendRequest);
 router.get('/friends', auth, getFriends);

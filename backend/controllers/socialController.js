@@ -64,6 +64,28 @@ exports.sendFriendRequest = async (req, res) => {
   }
 };
 
+// Test Push Notification
+exports.sendTestPush = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user.pushToken) {
+      return res.status(400).json({ msg: 'No push token registered for this user' });
+    }
+
+    await sendPushNotification(
+      user.pushToken,
+      'Test Notification',
+      'This is a test push notification from the server! 🚀',
+      { type: 'test' }
+    );
+
+    res.json({ msg: 'Test notification sent' });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+};
+
 // Accept Friend Request
 exports.acceptFriendRequest = async (req, res) => {
   try {
