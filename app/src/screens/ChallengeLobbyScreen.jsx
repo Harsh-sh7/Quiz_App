@@ -41,7 +41,7 @@ const ChallengeLobbyScreen = ({ route, navigation }) => {
 
   const handleAccept = async () => {
     try {
-      await acceptChallenge(challengeId);
+      await acceptChallenge({ challengeId });
       startCountdown();
     } catch (error) {
       console.error(error);
@@ -54,6 +54,23 @@ const ChallengeLobbyScreen = ({ route, navigation }) => {
     try {
       const statusData = await getChallengeStatus(challengeId);
       console.log('Challenge status:', statusData);
+      
+      // If challenge was rejected/declined
+      if (statusData.status === 'declined') {
+        // Stop polling
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+        }
+        
+        // Show alert and go back
+        Alert.alert(
+          'Challenge Rejected',
+          `${opponentName} declined your challenge`,
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
+        return;
+      }
       
       // If status changed to 'pending', it means the other user accepted
       if (statusData.status === 'pending') {

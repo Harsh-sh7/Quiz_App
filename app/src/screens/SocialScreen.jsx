@@ -11,8 +11,7 @@ import {
   ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNotification } from '../context/NotificationContext';
-import { 
+import {
   searchUsers, 
   sendFriendRequest, 
   acceptFriendRequest, 
@@ -22,16 +21,20 @@ import {
   getCategories,
   createChallenge,
   acceptChallenge,
-  deleteNotification
+  rejectChallenge,
+  deleteNotification,
+  getChallengeHistory,
+  clearChallengeHistory
 } from '../services/api';
 
 const SocialScreen = ({ navigation }) => {
-  const { showNotification } = useNotification();
   const [activeTab, setActiveTab] = useState('friends');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [friends, setFriends] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [challengeHistory, setChallengeHistory] = useState([]);
+  const [currentUserId, setCurrentUserId] = useState(null);
   const [loading, setLoading] = useState(false);
   
   // Challenge Modal State
@@ -39,63 +42,11 @@ const SocialScreen = ({ navigation }) => {
   const [selectedFriend, setSelectedFriend] = useState(null);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [lastNotificationCount, setLastNotificationCount] = useState(0);
 
   useEffect(() => {
     fetchData();
     fetchCategoriesList();
-    
-    // Poll for new notifications every 5 seconds
-    const notificationPoll = setInterval(async () => {
-      try {
-        const notifs = await getNotifications();
-        
-        // Check for new notifications
-        if (notifs.length > lastNotificationCount) {
-          const newNotifs = notifs.slice(0, notifs.length - lastNotificationCount);
-          
-          // Show in-app toast for each new notification
-          newNotifs.forEach(notif => {
-            if (notif.type === 'challenge_received') {
-              showNotification(
-                'New Challenge!',
-                `${notif.fromUser?.username} challenged you to a ${notif.data.category} quiz!`,
-                'challenge',
-                () => {
-                  // Navigate to notifications tab
-                  setActiveTab('notifications');
-                }
-              );
-            } else if (notif.type === 'friend_request') {
-              showNotification(
-                'Friend Request',
-                `${notif.fromUser?.username} sent you a friend request`,
-                'friend',
-                () => {
-                  setActiveTab('notifications');
-                }
-              );
-            } else if (notif.type === 'challenge_accepted') {
-              showNotification(
-                'Challenge Accepted!',
-                `${notif.fromUser?.username} accepted your challenge!`,
-                'success'
-              );
-            }
-          });
-        }
-        
-        setLastNotificationCount(notifs.length);
-        if (activeTab === 'notifications') {
-          setNotifications(notifs);
-        }
-      } catch (error) {
-        console.error('Error polling notifications:', error);
-      }
-    }, 5000);
-    
-    return () => clearInterval(notificationPoll);
-  }, [activeTab, lastNotificationCount]);
+  }, [activeTab]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -103,10 +54,13 @@ const SocialScreen = ({ navigation }) => {
       if (activeTab === 'friends') {
         const friendsList = await getFriends();
         setFriends(friendsList);
-      } else {
+      } else if (activeTab === 'notifications') {
         const notifs = await getNotifications();
         setNotifications(notifs);
-        setLastNotificationCount(notifs.length);
+      } else if (activeTab === 'history') {
+        const historyData = await getChallengeHistory();
+        setChallengeHistory(historyData.challenges);
+        setCurrentUserId(historyData.currentUserId);
       }
     } catch (error) {
       console.error(error);
@@ -155,12 +109,30 @@ const SocialScreen = ({ navigation }) => {
       // Delete the notification
       if (notificationId) {
         await deleteNotification(notificationId);
+        
+        // Immediately update the UI
+        setNotifications(prev => prev.filter(n => n._id !== notificationId));
       }
       
-      fetchData(); // Refresh notifications
       Alert.alert('Success', 'Friend request accepted!');
     } catch (error) {
       console.error(error);
+    }
+  };
+
+  const handleRejectFriend = async (notificationId) => {
+    try {
+      // Delete the notification
+      if (notificationId) {
+        await deleteNotification(notificationId);
+        
+        // Immediately update the UI
+        setNotifications(prev => prev.filter(n => n._id !== notificationId));
+      }
+      
+      Alert.alert('Request Declined', 'Friend request rejected');
+    } catch (error) {
+      console.error('Error rejecting friend request:', error);
     }
   };
 
@@ -223,6 +195,9 @@ const SocialScreen = ({ navigation }) => {
       // Delete the notification
       if (notificationId) {
         await deleteNotification(notificationId);
+        
+        // Immediately update the UI
+        setNotifications(prev => prev.filter(n => n._id !== notificationId));
       }
       
       // Navigate to lobby as challenged user (will auto-accept and start countdown)
@@ -237,6 +212,41 @@ const SocialScreen = ({ navigation }) => {
     } catch (error) {
       console.error(error);
       Alert.alert('Error', 'Failed to accept challenge');
+    }
+  };
+
+  const handleRejectChallenge = async (challengeId, notificationId) => {
+    try {
+      // Call backend to reject challenge
+      await rejectChallenge({ challengeId });
+      
+      // Delete notification
+      if (notificationId) {
+        await deleteNotification(notificationId);
+        
+        // Immediately update the UI by removing the notification from state
+        setNotifications(prev => prev.filter(n => n._id !== notificationId));
+      }
+      
+      Alert.alert('Challenge Rejected', 'You declined the challenge');
+    } catch (error) {
+      console.error('Error rejecting challenge:', error);
+      Alert.alert('Error', 'Failed to reject challenge');
+    }
+  };
+
+  const clearAllNotifications = async () => {
+    try {
+      // Delete all notifications
+      const deletePromises = notifications.map(notif => deleteNotification(notif._id));
+      await Promise.all(deletePromises);
+      
+      // Refresh
+      fetchData();
+      Alert.alert('Success', 'All notifications cleared');
+    } catch (error) {
+      console.error('Error clearing notifications:', error);
+      Alert.alert('Error', 'Failed to clear notifications');
     }
   };
 
@@ -255,7 +265,7 @@ const SocialScreen = ({ navigation }) => {
         style={styles.challengeButton}
         onPress={() => openChallengeModal(item)}
       >
-        <Text style={styles.challengeButtonText}>Challenge</Text>
+        <Ionicons name="trophy" size={20} color="#FFF" />
       </TouchableOpacity>
     </View>
   );
@@ -290,12 +300,20 @@ const SocialScreen = ({ navigation }) => {
               <Text style={styles.boldText}>{item.fromUser?.username}</Text> {item.message}
             </Text>
           </View>
-          <TouchableOpacity 
-            style={styles.acceptButton}
-            onPress={() => handleAcceptRequest(item.fromUser._id, item._id)}
-          >
-            <Text style={styles.acceptButtonText}>Accept</Text>
-          </TouchableOpacity>
+          <View style={styles.iconButtonsContainer}>
+            <TouchableOpacity 
+              style={styles.iconButtonAccept}
+              onPress={() => handleAcceptRequest(item.fromUser._id, item._id)}
+            >
+              <Ionicons name="checkmark" size={20} color="#FFF" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.iconButtonReject}
+              onPress={() => handleRejectFriend(item._id)}
+            >
+              <Ionicons name="close" size={20} color="#FFF" />
+            </TouchableOpacity>
+          </View>
         </View>
       );
     } else if (item.type === 'challenge_received') {
@@ -310,12 +328,20 @@ const SocialScreen = ({ navigation }) => {
               <Text style={styles.subText}>Category: {item.data.category}</Text>
             </View>
           </View>
-          <TouchableOpacity 
-            style={styles.playButton}
-            onPress={() => handleAcceptChallenge(item.data.challengeId, item.data.category, item.data.difficulty, item.fromUser?.username, item._id)}
-          >
-            <Text style={styles.playButtonText}>Accept</Text>
-          </TouchableOpacity>
+          <View style={styles.iconButtonsContainer}>
+            <TouchableOpacity 
+              style={styles.iconButtonAccept}
+              onPress={() => handleAcceptChallenge(item.data.challengeId, item.data.category, item.data.difficulty, item.fromUser?.username, item._id)}
+            >
+              <Ionicons name="checkmark" size={20} color="#FFF" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.iconButtonReject}
+              onPress={() => handleRejectChallenge(item.data.challengeId, item._id)}
+            >
+              <Ionicons name="close" size={20} color="#FFF" />
+            </TouchableOpacity>
+          </View>
         </View>
       );
     } else if (item.type === 'challenge_accepted') {
@@ -348,6 +374,61 @@ const SocialScreen = ({ navigation }) => {
     }
   };
 
+  const clearHistory = async () => {
+    try {
+      await clearChallengeHistory();
+      fetchData();
+      Alert.alert('Success', 'Challenge history cleared');
+    } catch (error) {
+      console.error('Error clearing history:', error);
+      Alert.alert('Error', 'Failed to clear history');
+    }
+  };
+
+  const renderHistoryItem = ({ item }) => {
+    // Correctly determine if current user is the challenger
+    const isChallenger = item.challenger._id === currentUserId;
+    const opponent = isChallenger ? item.challenged : item.challenger;
+    const myScore = isChallenger ? item.challengerScore : item.challengedScore;
+    const opponentScore = isChallenger ? item.challengedScore : item.challengerScore;
+    
+    // Check if it's a draw
+    const isDraw = myScore === opponentScore;
+    
+    // Check if current user won (only if not a draw)
+    const won = !isDraw && item.winner?._id === currentUserId;
+    
+    return (
+      <View style={styles.historyItem}>
+        <View style={styles.historyHeader}>
+          <Ionicons 
+            name={isDraw ? "remove-circle" : (won ? "trophy" : "close-circle")} 
+            size={24} 
+            color={isDraw ? "#FFA500" : (won ? "#FFD700" : "#FF6B6B")} 
+          />
+          <View style={styles.historyInfo}>
+            <Text style={styles.historyOpponent}>vs {opponent.username}</Text>
+            <Text style={styles.historyCategory}>{item.category}</Text>
+          </View>
+        </View>
+        <View style={styles.historyScores}>
+          <View style={styles.scoreBox}>
+            <Text style={styles.scoreLabel}>You</Text>
+            <Text style={styles.scoreValue}>{myScore || 0}</Text>
+          </View>
+          <Text style={styles.scoreDivider}>-</Text>
+          <View style={styles.scoreBox}>
+            <Text style={styles.scoreLabel}>{opponent.username}</Text>
+            <Text style={styles.scoreValue}>{opponentScore || 0}</Text>
+          </View>
+        </View>
+        <Text style={styles.historyResult}>
+          {isDraw ? '🤝 Draw!' : (won ? '🎉 Victory!' : '😔 Defeat')}
+        </Text>
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -369,6 +450,12 @@ const SocialScreen = ({ navigation }) => {
             Notifications
           </Text>
           {notifications.some(n => !n.read) && <View style={styles.badge} />}
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.tab, activeTab === 'history' && styles.activeTab]}
+          onPress={() => setActiveTab('history')}
+        >
+          <Text style={[styles.tabText, activeTab === 'history' && styles.activeTabText]}>History</Text>
         </TouchableOpacity>
       </View>
 
@@ -411,16 +498,46 @@ const SocialScreen = ({ navigation }) => {
             </View>
           )}
         </View>
-      ) : (
+      ) : activeTab === 'notifications' ? (
         <View style={styles.content}>
           {notifications.length === 0 ? (
             <Text style={styles.emptyText}>No notifications</Text>
           ) : (
-            <FlatList
-              data={notifications}
-              renderItem={renderNotificationItem}
-              keyExtractor={item => item._id}
-            />
+            <>
+              <TouchableOpacity 
+                style={styles.clearAllButton}
+                onPress={clearAllNotifications}
+              >
+                <Ionicons name="trash-outline" size={18} color="#FFF" />
+                <Text style={styles.clearAllText}>Clear All</Text>
+              </TouchableOpacity>
+              <FlatList
+                data={notifications}
+                renderItem={renderNotificationItem}
+                keyExtractor={item => item._id}
+              />
+            </>
+          )}
+        </View>
+      ) : (
+        <View style={styles.content}>
+          {challengeHistory.length === 0 ? (
+            <Text style={styles.emptyText}>No challenge history</Text>
+          ) : (
+            <>
+              <TouchableOpacity 
+                style={styles.clearAllButton}
+                onPress={clearHistory}
+              >
+                <Ionicons name="trash-outline" size={18} color="#FFF" />
+                <Text style={styles.clearAllText}>Clear History</Text>
+              </TouchableOpacity>
+              <FlatList
+                data={challengeHistory}
+                renderItem={renderHistoryItem}
+                keyExtractor={item => item._id}
+              />
+            </>
           )}
         </View>
       )}
@@ -732,6 +849,99 @@ const styles = StyleSheet.create({
   startButtonText: {
     color: '#FFF',
     fontWeight: '600',
+  },
+  clearAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FF6B6B',
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+    marginBottom: 15,
+    alignSelf: 'flex-end',
+    marginRight: 10,
+  },
+  clearAllText: {
+    color: '#FFF',
+    fontWeight: '600',
+    marginLeft: 5,
+  },
+  iconButtonsContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  iconButtonAccept: {
+    backgroundColor: '#4CAF50',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconButtonReject: {
+    backgroundColor: '#F44336',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  historyItem: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 10,
+    marginHorizontal: 10,
+  },
+  historyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  historyInfo: {
+    marginLeft: 10,
+    flex: 1,
+  },
+  historyOpponent: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  historyCategory: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  historyScores: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 10,
+  },
+  scoreBox: {
+    alignItems: 'center',
+  },
+  scoreLabel: {
+    fontSize: 12,
+    color: '#666',
+  },
+  scoreValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#000',
+    marginTop: 5,
+  },
+  scoreDivider: {
+    fontSize: 20,
+    color: '#666',
+    marginHorizontal: 20,
+  },
+  historyResult: {
+    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 5,
   },
 });
 

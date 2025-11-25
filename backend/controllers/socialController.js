@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Challenge = require('../models/Challenge');
 const Notification = require('../models/Notification');
+const sendPushNotification = require('../utils/pushNotification');
 
 // Search Users
 exports.searchUsers = async (req, res) => {
@@ -44,6 +45,17 @@ exports.sendFriendRequest = async (req, res) => {
       message: `sent you a friend request`
     });
     await notification.save();
+
+    // Send Push Notification
+    if (targetUser.pushToken) {
+      const sender = await User.findById(req.user.id);
+      await sendPushNotification(
+        targetUser.pushToken,
+        'New Friend Request',
+        `${sender.username} sent you a friend request`,
+        { type: 'friend_request', notificationId: notification._id }
+      );
+    }
 
     res.json({ msg: 'Friend request sent' });
   } catch (err) {
@@ -119,6 +131,18 @@ exports.createChallenge = async (req, res) => {
     });
     await notification.save();
 
+    // Send Push Notification
+    const challengedUser = await User.findById(challengedId);
+    if (challengedUser && challengedUser.pushToken) {
+      const challenger = await User.findById(req.user.id);
+      await sendPushNotification(
+        challengedUser.pushToken,
+        'New Challenge!',
+        `${challenger.username} challenged you to a ${category} quiz!`,
+        { type: 'challenge_received', challengeId: challenge._id, notificationId: notification._id }
+      );
+    }
+
     res.json(challenge);
   } catch (err) {
     console.error(err.message);
@@ -142,46 +166,143 @@ exports.getPendingChallenges = async (req, res) => {
   }
 };
 
-// Accept Challenge (for invited status)
+// Accept Challenge
 exports.acceptChallenge = async (req, res) => {
   try {
     const { challengeId } = req.body;
-    console.log('Accept Challenge - challengeId:', challengeId);
-    console.log('Accept Challenge - userId:', req.user.id);
+    
+    console.log('Accept challenge request:', { challengeId, userId: req.user.id });
     
     const challenge = await Challenge.findById(challengeId);
-    console.log('Challenge found:', challenge);
     
-    if (!challenge) return res.status(404).json({ msg: 'Challenge not found' });
+    if (!challenge) {
+      console.log('Challenge not found');
+      return res.status(404).json({ msg: 'Challenge not found' });
+    }
+    
+    console.log('Challenge found:', challenge);
+    console.log('Challenge.challenged type:', typeof challenge.challenged);
+    console.log('req.user.id type:', typeof req.user.id);
+    console.log('Challenge.challenged value:', challenge.challenged);
+    console.log('req.user.id value:', req.user.id);
     
     // Convert both to strings for comparison
-    const challengedId = challenge.challenged.toString();
-    const userId = req.user.id.toString();
-    
-    console.log('Challenged ID:', challengedId);
-    console.log('User ID:', userId);
-    
-    if (challengedId !== userId) {
+    if (challenge.challenged.toString() !== req.user.id.toString()) {
+      console.log('User not authorized to accept this challenge');
       return res.status(401).json({ msg: 'Not authorized' });
     }
     
-    challenge.status = 'pending'; // Now both can play
+    challenge.status = 'pending';
     await challenge.save();
     
-    // Notify Challenger
+    // Notify challenger that challenge was accepted
     const notification = new Notification({
       user: challenge.challenger,
       type: 'challenge_accepted',
       fromUser: req.user.id,
       data: { challengeId: challenge._id },
-      message: `accepted your challenge!`
+      message: 'accepted your challenge!'
     });
     await notification.save();
     
+    console.log('Challenge accepted successfully');
     res.json(challenge);
   } catch (err) {
-    console.error('Accept Challenge Error:', err);
-    res.status(500).json({ msg: 'Server Error', error: err.message });
+    console.error('Accept challenge error:', err.message);
+    res.status(500).send('Server Error');
+  }
+};
+
+// Get Challenge History
+exports.getChallengeHistory = async (req, res) => {
+  try {
+    const challenges = await Challenge.find({
+      $or: [
+        { challenger: req.user.id },
+        { challenged: req.user.id }
+      ],
+      status: 'completed'
+    })
+    .populate('challenger', 'username')
+    .populate('challenged', 'username')
+    .populate('winner', 'username')
+    .sort({ createdAt: -1 })
+    .limit(50); // Limit to last 50 challenges
+    
+    res.json({
+      challenges,
+      currentUserId: req.user.id
+    });
+  } catch (err) {
+    console.error('Get challenge history error:', err.message);
+    res.status(500).send('Server Error');
+  }
+};
+
+// Clear Challenge History
+exports.clearChallengeHistory = async (req, res) => {
+  try {
+    // Delete all completed challenges where user was involved
+    await Challenge.deleteMany({
+      $or: [
+        { challenger: req.user.id },
+        { challenged: req.user.id }
+      ],
+      status: 'completed'
+    });
+    
+    res.json({ msg: 'Challenge history cleared' });
+  } catch (err) {
+    console.error('Clear challenge history error:', err.message);
+    res.status(500).send('Server Error');
+  }
+};
+
+// Reject Challenge
+exports.rejectChallenge = async (req, res) => {
+  try {
+    const { challengeId } = req.body;
+    
+    const challenge = await Challenge.findById(challengeId);
+    
+    if (!challenge) {
+      return res.status(404).json({ msg: 'Challenge not found' });
+    }
+    
+    if (challenge.challenged.toString() !== req.user.id.toString()) {
+      return res.status(401).json({ msg: 'Not authorized' });
+    }
+    
+    // Update challenge status to declined
+    challenge.status = 'declined';
+    await challenge.save();
+    
+    // Notify challenger that challenge was rejected
+    const notification = new Notification({
+      user: challenge.challenger,
+      type: 'challenge_rejected',
+      fromUser: req.user.id,
+      data: { challengeId: challenge._id, category: challenge.category },
+      message: 'rejected your challenge'
+    });
+    await notification.save();
+
+    // Send Push Notification
+    const challenger = await User.findById(challenge.challenger);
+    if (challenger && challenger.pushToken) {
+      const rejecter = await User.findById(req.user.id);
+      await sendPushNotification(
+        challenger.pushToken,
+        'Challenge Rejected',
+        `${rejecter.username} rejected your challenge`,
+        { type: 'challenge_rejected', challengeId: challenge._id, notificationId: notification._id }
+      );
+    }
+    
+    res.json({ msg: 'Challenge rejected' });
+  } catch (err) {
+    console.error('Reject challenge error:', err.message);
+    res.status(500).send('Server Error');
   }
 };
 
@@ -228,6 +349,18 @@ exports.completeChallenge = async (req, res) => {
         message: `completed the challenge!`
       });
       await notification.save();
+
+      // Send Push Notification
+      const otherUserObj = await User.findById(otherUser);
+      if (otherUserObj && otherUserObj.pushToken) {
+        const completer = await User.findById(req.user.id);
+        await sendPushNotification(
+          otherUserObj.pushToken,
+          'Challenge Completed!',
+          `${completer.username} completed the challenge! Check the results.`,
+          { type: 'challenge_completed', challengeId: challenge._id, notificationId: notification._id }
+        );
+      }
 
     } else {
       // Still pending the other player

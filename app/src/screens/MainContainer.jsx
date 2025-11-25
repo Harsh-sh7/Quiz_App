@@ -12,7 +12,9 @@ import {
 import SocialScreen from "./SocialScreen";
 import { Ionicons } from "@expo/vector-icons";
 import { AuthContext } from "../context/AuthContext";
-import { getUserScores, getLeaderboard, getCategories } from "../services/api";
+import { useNotification } from "../context/NotificationContext";
+import { usePushNotifications } from "../hooks/usePushNotifications";
+import { getUserScores, getLeaderboard, getCategories, getNotifications, acceptChallenge, rejectChallenge, acceptFriendRequest, deleteNotification, savePushToken } from "../services/api";
 
 const { width } = Dimensions.get("window");
 
@@ -26,11 +28,198 @@ const MainContainer = ({ navigation }) => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const { logout } = useContext(AuthContext);
+  const { showNotification } = useNotification();
+  const { expoPushToken } = usePushNotifications();
 
   useEffect(() => {
+    if (expoPushToken) {
+      savePushToken(expoPushToken).catch(err => console.error("Failed to save push token:", err));
+    }
+  }, [expoPushToken]);
+
+  const handleAcceptChallenge = async (challengeId, category, difficulty, challengerName, notificationId) => {
+    try {
+      // Delete notification first
+      if (notificationId) {
+        await deleteNotification(notificationId);
+      }
+      
+      // Navigate to challenge lobby
+      const cat = availableCategories.find(c => c.name === category);
+      const catId = cat ? cat.id : 9;
+      
+      navigation.navigate('ChallengeLobby', {
+        challengeId,
+        category,
+        categoryId: catId,
+        difficulty,
+        opponentName: challengerName,
+        isChallenger: false
+      });
+    } catch (error) {
+      console.error('Error accepting challenge:', error);
+    }
+  };
+
+  const handleRejectChallenge = async (challengeId, notificationId) => {
+    try {
+      // Call backend to reject challenge and notify the challenger
+      await rejectChallenge({ challengeId });
+      
+      // Delete the notification
+      if (notificationId) {
+        await deleteNotification(notificationId);
+        // Update ref to reflect deleted notification
+        lastNotificationCountRef.current = Math.max(0, lastNotificationCountRef.current - 1);
+      }
+      
+      showNotification('Challenge Rejected', 'You declined the challenge', 'info');
+    } catch (error) {
+      console.error('Error rejecting challenge:', error);
+    }
+  };
+
+  const handleAcceptFriend = async (userId, notificationId) => {
+    try {
+      await acceptFriendRequest(userId);
+      if (notificationId) {
+        await deleteNotification(notificationId);
+      }
+      showNotification('Friend Added!', 'Friend request accepted', 'success');
+    } catch (error) {
+      console.error('Error accepting friend request:', error);
+    }
+  };
+
+  const handleRejectFriend = async (notificationId) => {
+    try {
+      if (notificationId) {
+        await deleteNotification(notificationId);
+      }
+      showNotification('Request Declined', 'Friend request rejected', 'info');
+    } catch (error) {
+      console.error('Error rejecting friend request:', error);
+    }
+  };
+
+  // Use ref for notification count to avoid useEffect dependency issues
+  const lastNotificationCountRef = React.useRef(0);
+
+  // Initialize and poll for notifications
+  useEffect(() => {
+    console.log('🚀 MainContainer mounted - Starting notification system');
+    
     fetchScores();
     fetchCategories();
-  }, []);
+    
+    // Initialize notification count
+    const initNotifications = async () => {
+      try {
+        const notifs = await getNotifications();
+        lastNotificationCountRef.current = notifs.length;
+        console.log('✅ Initial notification count:', notifs.length);
+      } catch (error) {
+        console.error('❌ Error initializing notifications:', error);
+      }
+    };
+    
+    initNotifications();
+    
+    // Poll for notifications every 5 seconds
+    const notificationPoll = setInterval(async () => {
+      try {
+        const notifs = await getNotifications();
+        const currentCount = notifs.length;
+        const lastCount = lastNotificationCountRef.current;
+        
+        console.log('🔔 Polling - Current:', currentCount, 'Last:', lastCount);
+        
+        // Check for new notifications
+        if (currentCount > lastCount) {
+          const newNotifs = notifs.slice(0, currentCount - lastCount);
+          
+          console.log('🆕 New notifications detected:', newNotifs.length);
+          
+          // Show in-app toast for each new notification
+          newNotifs.forEach(notif => {
+            console.log('📢 Showing notification:', notif.type);
+            if (notif.type === 'challenge_received') {
+              showNotification(
+                'New Challenge!',
+                `${notif.fromUser?.username} challenged you to a ${notif.data.category} quiz!`,
+                'challenge',
+                null,
+                [
+                  {
+                    label: 'Accept',
+                    style: 'primary',
+                    onPress: () => handleAcceptChallenge(
+                      notif.data.challengeId,
+                      notif.data.category,
+                      notif.data.difficulty,
+                      notif.fromUser?.username,
+                      notif._id
+                    )
+                  },
+                  {
+                    label: 'Reject',
+                    style: 'destructive',
+                    onPress: () => handleRejectChallenge(notif.data.challengeId, notif._id)
+                  }
+                ]
+              );
+            } else if (notif.type === 'friend_request') {
+              showNotification(
+                'Friend Request',
+                `${notif.fromUser?.username} sent you a friend request`,
+                'friend',
+                null,
+                [
+                  {
+                    label: 'Accept',
+                    style: 'primary',
+                    onPress: () => handleAcceptFriend(notif.fromUser._id, notif._id)
+                  },
+                  {
+                    label: 'Reject',
+                    style: 'destructive',
+                    onPress: () => handleRejectFriend(notif._id)
+                  }
+                ]
+              );
+            } else if (notif.type === 'challenge_accepted') {
+              showNotification(
+                'Challenge Accepted!',
+                `${notif.fromUser?.username} accepted your challenge!`,
+                'success'
+              );
+            } else if (notif.type === 'challenge_rejected') {
+              showNotification(
+                'Challenge Rejected',
+                `${notif.fromUser?.username} rejected your challenge`,
+                'error'
+              );
+            } else if (notif.type === 'challenge_completed') {
+              showNotification(
+                'Challenge Completed!',
+                `${notif.fromUser?.username} completed your challenge!`,
+                'success'
+              );
+            }
+          });
+          
+          lastNotificationCountRef.current = currentCount;
+        }
+      } catch (error) {
+        console.error('❌ Error polling notifications:', error);
+      }
+    }, 5000);
+    
+    return () => {
+      console.log('🛑 Cleaning up notification poll');
+      clearInterval(notificationPoll);
+    };
+  }, []); // Empty dependency array - runs once on mount
 
   useEffect(() => {
     if (activeTab === "leaderboard") {

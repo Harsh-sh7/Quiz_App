@@ -85,3 +85,19 @@ exports.login = async (req, res) => {
     res.status(500).send('Server error');
   }
 };
+
+exports.savePushToken = async (req, res) => {
+  const { token } = req.body;
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+    
+    user.pushToken = token;
+    await user.save();
+    
+    res.json({ msg: 'Push token saved' });
+  } catch (err) {
+    console.error('Save push token error:', err.message);
+    res.status(500).send('Server Error');
+  }
+};

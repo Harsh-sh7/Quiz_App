@@ -94,8 +94,13 @@ export const createChallenge = async (data) => {
   return response.data;
 };
 
-export const acceptChallenge = async (challengeId) => {
-  const response = await api.post('/social/challenge/accept', { challengeId });
+export const acceptChallenge = async (data) => {
+  const response = await api.post('/social/challenge/accept', data);
+  return response.data;
+};
+
+export const rejectChallenge = async (data) => {
+  const response = await api.post('/social/challenge/reject', data);
   return response.data;
 };
 
@@ -124,8 +129,23 @@ export const saveChallengeQuestions = async (challengeId, questions) => {
   return response.data;
 };
 
+export const getChallengeHistory = async () => {
+  const response = await api.get('/social/challenges/history');
+  return response.data;
+};
+
+export const clearChallengeHistory = async () => {
+  const response = await api.delete('/social/challenges/history');
+  return response.data;
+};
+
 export const markNotificationRead = async (notificationId) => {
   const response = await api.put(`/social/notifications/${notificationId}/read`);
+  return response.data;
+};
+
+export const savePushToken = async (token) => {
+  const response = await api.post('/auth/save-push-token', { token });
   return response.data;
 };
 

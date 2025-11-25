@@ -22,12 +22,12 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.harshit.quizie"
-    } ,
+    },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "apiUrl": "https://quiz-app-89nn.onrender.com",
+      "apiUrl": "http://10.7.7.66:3000",
       "eas": {
         "projectId": "f48931d6-073a-459c-a1ad-0887f928eb8e"
       }
