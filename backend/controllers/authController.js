@@ -88,16 +88,22 @@ exports.login = async (req, res) => {
 
 exports.savePushToken = async (req, res) => {
   const { token } = req.body;
+  console.log('📝 Received push token request:', { userId: req.user.id, token });
+  
   try {
     const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ msg: 'User not found' });
+    if (!user) {
+      console.log('❌ User not found for token save');
+      return res.status(404).json({ msg: 'User not found' });
+    }
     
     user.pushToken = token;
     await user.save();
     
+    console.log('✅ Push token saved successfully for user:', user.username);
     res.json({ msg: 'Push token saved' });
   } catch (err) {
-    console.error('Save push token error:', err.message);
+    console.error('❌ Save push token error:', err.message);
     res.status(500).send('Server Error');
   }
 };

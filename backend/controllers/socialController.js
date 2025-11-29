@@ -67,10 +67,15 @@ exports.sendFriendRequest = async (req, res) => {
 // Test Push Notification
 exports.sendTestPush = async (req, res) => {
   try {
+    console.log('🚀 Attempting to send test push to user:', req.user.id);
     const user = await User.findById(req.user.id);
+    
     if (!user.pushToken) {
+      console.log('❌ No push token found for user:', user.username);
       return res.status(400).json({ msg: 'No push token registered for this user' });
     }
+
+    console.log('Found token:', user.pushToken);
 
     await sendPushNotification(
       user.pushToken,
@@ -79,9 +84,10 @@ exports.sendTestPush = async (req, res) => {
       { type: 'test' }
     );
 
+    console.log('✅ Test notification function called');
     res.json({ msg: 'Test notification sent' });
   } catch (err) {
-    console.error(err.message);
+    console.error('❌ Test push error:', err.message);
     res.status(500).send('Server Error');
   }
 };

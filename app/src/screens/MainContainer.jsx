@@ -314,7 +314,11 @@ const MainContainer = ({ navigation }) => {
   ];
 
   const getCategoryName = (catId) => {
-    const cat = categories.find((c) => c.id.toString() === catId);
+    if (!catId) return "Quiz";
+    // Try to find in availableCategories (dynamic) first, then hardcoded
+    // Use loose equality to handle both string and number IDs
+    const cat = availableCategories.find((c) => c.id == catId) || 
+                categories.find((c) => c.id == catId);
     return cat ? cat.name : "Quiz";
   };
 
@@ -428,26 +432,6 @@ const MainContainer = ({ navigation }) => {
     const rest = dataArray.slice(3);
     // console.log('Leaderboard Data:', dataArray);
 
-    if (leaderboardLoading) {
-      return (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#000" />
-        </View>
-      );
-    }
-
-    if (dataArray.length === 0) {
-      return (
-        <View style={styles.emptyLeaderboard}>
-          <Ionicons name="trophy-outline" size={80} color="#999" />
-          <Text style={styles.emptyTitle}>No Data Yet</Text>
-          <Text style={styles.emptyText}>
-            Be the first to play and top the leaderboard!
-          </Text>
-        </View>
-      );
-    }
-
     return (
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -463,134 +447,150 @@ const MainContainer = ({ navigation }) => {
           <TouchableOpacity
             style={[
               styles.filterChip,
-              !selectedCategory && styles.filterChipActive,
+              selectedCategory === null && styles.filterChipActive,
             ]}
             onPress={() => setSelectedCategory(null)}
           >
             <Text
               style={[
                 styles.filterChipText,
-                !selectedCategory && styles.filterChipTextActive,
+                selectedCategory === null && styles.filterChipTextActive,
               ]}
             >
               All
             </Text>
           </TouchableOpacity>
-          {availableCategories.map((cat, index) => (
+          {availableCategories.map((cat) => (
             <TouchableOpacity
-              key={index}
+              key={cat.id}
               style={[
                 styles.filterChip,
-                selectedCategory === cat && styles.filterChipActive,
+                selectedCategory === cat.id && styles.filterChipActive,
               ]}
-              onPress={() => setSelectedCategory(cat)}
+              onPress={() => setSelectedCategory(cat.id)}
             >
               <Text
                 style={[
                   styles.filterChipText,
-                  selectedCategory === cat && styles.filterChipTextActive,
+                  selectedCategory === cat.id && styles.filterChipTextActive,
                 ]}
               >
-                {getCategoryName(cat)}
+                {cat.name}
               </Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
 
-        {/* Top 3 Podium */}
-        {topThree.length >= 1 && (
-          <View style={styles.podium}>
-            {/* 2nd Place */}
-            {topThree[1] && (
-              <View style={styles.podiumItem}>
-                <View style={[styles.avatar, styles.avatar2]}>
-                  <Text style={styles.avatarText}>
-                    {topThree[1]?.username?.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-                <Text style={styles.podiumBadge}>🥈</Text>
-                <Text style={styles.podiumName}>{topThree[1]?.username}</Text>
-                <Text style={styles.podiumPoints}>
-                  {topThree[1]?.percentage?.toFixed(0)}%
-                </Text>
-              </View>
-            )}
-
-            {/* 1st Place */}
-            {topThree[0] && (
-              <View style={[styles.podiumItem, styles.podiumWinner]}>
-                <View style={[styles.avatar, styles.avatar1]}>
-                  <Text style={styles.avatarText}>
-                    {topThree[0]?.username?.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-                <Text style={styles.podiumBadge}>🥇</Text>
-                <Text style={styles.podiumName}>{topThree[0]?.username}</Text>
-                <Text style={styles.podiumPoints}>
-                  {topThree[0]?.percentage?.toFixed(0)}%
-                </Text>
-              </View>
-            )}
-
-            {/* 3rd Place */}
-            {topThree[2] && (
-              <View style={styles.podiumItem}>
-                <View style={[styles.avatar, styles.avatar3]}>
-                  <Text style={styles.avatarText}>
-                    {topThree[2]?.username?.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-                <Text style={styles.podiumBadge}>🥉</Text>
-                <Text style={styles.podiumName}>{topThree[2]?.username}</Text>
-                <Text style={styles.podiumPoints}>
-                  {topThree[2]?.percentage?.toFixed(0)}%
-                </Text>
-              </View>
-            )}
+        {leaderboardLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#000" />
           </View>
-        )}
+        ) : dataArray.length === 0 ? (
+          <View style={styles.emptyLeaderboard}>
+            <Ionicons name="trophy-outline" size={80} color="#999" />
+            <Text style={styles.emptyTitle}>No Data Yet</Text>
+            <Text style={styles.emptyText}>
+              Be the first to play and top the leaderboard!
+            </Text>
+          </View>
+        ) : (
+          <>
+            {/* Top 3 Podium */}
+            {topThree.length >= 1 && (
+              <View style={styles.podium}>
+                {/* 2nd Place */}
+                {topThree[1] && (
+                  <View style={styles.podiumItem}>
+                    <View style={[styles.avatar, styles.avatar2]}>
+                      <Text style={styles.avatarText}>
+                        {topThree[1]?.username?.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                    <Text style={styles.podiumBadge}>🥈</Text>
+                    <Text style={styles.podiumName}>{topThree[1]?.username}</Text>
+                    <Text style={styles.podiumPoints}>
+                      {topThree[1]?.percentage?.toFixed(0)}%
+                    </Text>
+                  </View>
+                )}
 
-        {/* Leaderboard List */}
-        {rest.map((player, index) => {
-          const rank = index + 4;
-          return (
-            <View key={player.userId || index} style={styles.listItem}>
-              <View style={styles.listLeft}>
-                <View style={styles.listAvatar}>
-                  <Text style={styles.listAvatarText}>
-                    {player.username?.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.listName}>{player.username}</Text>
-                  <Text style={styles.listPoints}>
-                    {player.totalQuizzes} quizzes
-                  </Text>
-                </View>
+                {/* 1st Place */}
+                {topThree[0] && (
+                  <View style={[styles.podiumItem, styles.podiumWinner]}>
+                    <View style={[styles.avatar, styles.avatar1]}>
+                      <Text style={styles.avatarText}>
+                        {topThree[0]?.username?.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                    <Text style={styles.podiumBadge}>🥇</Text>
+                    <Text style={styles.podiumName}>{topThree[0]?.username}</Text>
+                    <Text style={styles.podiumPoints}>
+                      {topThree[0]?.percentage?.toFixed(0)}%
+                    </Text>
+                  </View>
+                )}
+
+                {/* 3rd Place */}
+                {topThree[2] && (
+                  <View style={styles.podiumItem}>
+                    <View style={[styles.avatar, styles.avatar3]}>
+                      <Text style={styles.avatarText}>
+                        {topThree[2]?.username?.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                    <Text style={styles.podiumBadge}>🥉</Text>
+                    <Text style={styles.podiumName}>{topThree[2]?.username}</Text>
+                    <Text style={styles.podiumPoints}>
+                      {topThree[2]?.percentage?.toFixed(0)}%
+                    </Text>
+                  </View>
+                )}
               </View>
-              <View style={styles.listRight}>
-                <View
-                  style={[
-                    styles.rankBadge,
-                    { backgroundColor: getScoreColor(rank) },
-                  ]}
-                >
-                  <Text style={styles.rankText}>#{rank}</Text>
+            )}
+
+            {/* Leaderboard List */}
+            {rest.map((player, index) => {
+              const rank = index + 4;
+              return (
+                <View key={player.userId || index} style={styles.listItem}>
+                  <View style={styles.listLeft}>
+                    <View style={styles.listAvatar}>
+                      <Text style={styles.listAvatarText}>
+                        {player.username?.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.listName}>{player.username}</Text>
+                      <Text style={styles.listPoints}>
+                        {player.totalQuizzes} quizzes
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.listRight}>
+                    <View
+                      style={[
+                        styles.rankBadge,
+                        { backgroundColor: getScoreColor(rank) },
+                      ]}
+                    >
+                      <Text style={styles.rankText}>#{rank}</Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.scoreBadge,
+                        { backgroundColor: getScoreColor(rank) },
+                      ]}
+                    >
+                      <Text style={styles.scoreText}>
+                        {player.percentage?.toFixed(0)}%
+                      </Text>
+                    </View>
+                  </View>
                 </View>
-                <View
-                  style={[
-                    styles.scoreBadge,
-                    { backgroundColor: getScoreColor(rank) },
-                  ]}
-                >
-                  <Text style={styles.scoreText}>
-                    {player.percentage?.toFixed(0)}%
-                  </Text>
-                </View>
-              </View>
-            </View>
-          );
-        })}
+              );
+            })}
+          </>
+        )}
       </ScrollView>
     );
   };

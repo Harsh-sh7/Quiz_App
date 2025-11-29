@@ -532,7 +532,7 @@ const SocialScreen = ({ navigation }) => {
             </>
           )}
         </View>
-      ) : (
+      ) : activeTab === 'history' ? (
         <View style={styles.content}>
           {challengeHistory.length === 0 ? (
             <Text style={styles.emptyText}>No challenge history</Text>
@@ -553,7 +553,47 @@ const SocialScreen = ({ navigation }) => {
             </>
           )}
         </View>
-      )}
+      ) : activeTab === 'debug' ? (
+        <View style={styles.content}>
+          <Text style={styles.sectionTitle}>Debug Info</Text>
+          <View style={styles.historyItem}>
+            <Text style={{ fontWeight: 'bold' }}>API URL:</Text>
+            <Text style={{ fontSize: 12, marginBottom: 10 }}>{Constants.expoConfig?.extra?.apiUrl || 'Using default'}</Text>
+            
+            <Text style={{ fontWeight: 'bold' }}>Push Token:</Text>
+            <Text style={{ fontSize: 10, marginBottom: 10 }}>
+              {expoPushToken ? expoPushToken.substring(0, 20) + '...' : 'None'}
+            </Text>
+
+            <TouchableOpacity 
+              style={[styles.actionButton, { backgroundColor: '#007bff', marginBottom: 10, padding: 10, borderRadius: 8, alignItems: 'center' }]}
+              onPress={async () => {
+                try {
+                  await sendTestPush();
+                  Alert.alert('Success', 'Test push sent! Close app to see it.');
+                } catch (e) {
+                  Alert.alert('Error', e.message);
+                }
+              }}
+            >
+              <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Test Push Notification</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.actionButton, { backgroundColor: '#28a745', padding: 10, borderRadius: 8, alignItems: 'center' }]}
+              onPress={() => {
+                showNotification(
+                  'Test Popup',
+                  'This is a test in-app notification',
+                  'success'
+                );
+              }}
+            >
+              <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Test In-App Popup</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : null}
 
       {/* Challenge Modal */}
       <Modal

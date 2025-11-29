@@ -28,7 +28,7 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "apiUrl": "https://quiz-app-89nn.onrender.com",
+      "apiUrl": "https://quiz-app-umber-five.vercel.app",
       "eas": {
         "projectId": "f48931d6-073a-459c-a1ad-0887f928eb8e"
       }
