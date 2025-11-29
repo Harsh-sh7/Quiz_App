@@ -5,6 +5,7 @@ node_modules/
 # ignore frontend env
 app/.env
 app/node_modules/
+app/firebase-service-account.json
 
 # ignore backend env
 backend/.env
